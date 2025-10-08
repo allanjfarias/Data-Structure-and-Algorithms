@@ -1,201 +1,193 @@
-
-
 class Node:
-    def __init__(self, data=None):
-        self.data = data
+    def __init__(self, data):
+        self.p = None
         self.left = None
         self.right = None
-        self.parent = None
-
-    def is_left(self):
-        q = self.parent
-        if q == None:
-            return False
-
-        if q.left == self:
-            return True
-
-        return False
+        self.data = data
 
     def is_right(self):
-        q = self.parent
-        if q == None:
-            return False
+        q = self.p
+        return q is not None and q.right == self
 
-        if q.right == self:
-            return True
-
-        return False
+    def is_left(self):
+        q = self.p
+        return q is not None and q.left == self
 
     def brother(self):
-        if self.parent == None:
-            return False
+        q = self.p
 
-        if self.is_left():
-            return self.parent.right
+        if q is None:
+            return
 
-        return self.parent.left
+        elif self.is_right():
+            return q.left
+
+        return q.right
 
     def __repr__(self):
-        return f'{self.data}'
+        return f"Node: {self.data}"
 
 
 class BinarySearchTree:
     def __init__(self):
         self.root = None
 
-    def insert(self, data):
-        new_node = Node(data)
-        x = self.root
-        y = None
+    def min(self, start_node):
+        x = self.root if start_node is None else start_node
 
-        while x != None:
-            y = x
+        while x.left is not None:
+            x = x.left
 
-            if x.data > new_node.data:
-                x = x.left
-            else:
-                x = x.right
+        return x
 
-        new_node.parent = y
+    def max(self, start_node):
+        x = self.root if start_node is None else start_node
 
-        if y == None:
-            self.root = new_node
+        while x.right is not None:
+            x = x.right
 
-        elif y.data > new_node.data:
-            y.left = new_node
+        return x
 
-        else:
-            y.right = new_node
+    def in_order_walk(self,
+                      node,
+                      visit=lambda x: print(x.data)
+                      ):
+
+        if node is not None:
+            self.in_order_walk(node.left, visit)
+            visit(node)
+            self.in_order_walk(node.right, visit)
+
+    
+    def pre_order_walk(self,
+                       node,
+                       visit=lambda x: print(x.data)
+                       ):
+        
+        if node is not None:
+            visit(node)
+            self.pre_order_walk(node.left, visit)
+            self.pre_order_walk(node.right, visit)
+
+    
+    def pos_order_walk(self,
+                       node,
+                       visit=lambda x: print(x.data)
+                       ):
+        
+        if node is not None:
+            self.pos_order_walk(node.left, visit)
+            self.pos_order_walk(node.right, visit)
+            visit(node)
+
+    
+    def successor(self, node):
+        x = self.search(node)
+
+        if x is None:
+            return
+
+        elif x.right is not None:
+            return self.min(x.right)
+
+        y = x.p
+
+        while y is not None and x.is_right():
+            x = y
+            y = y.p
+
+        return y
+
+    def predecessor(self, node):
+        x = self.search(node)
+
+        if x is None:
+            return
+
+        elif x.left is not None:
+            return self.max(x.left)
+
+        y = x.p
+
+        while y is not None and x.is_left():
+            x = y
+            y = y.p
+
+        return y
 
     def search(self, key):
         x = self.root
 
-        while x != None and key != x.data:
-            if key < x.data:
-                x = x.left
-            else:
+        while x is not None and x.data != key:
+            if key > x.data:
                 x = x.right
+
+            else:
+                x = x.left
 
         return x
 
-    def min(self, x=None):
-        current = self.root if x is None else x
+    def insert(self, data):
+        z = Node(data)
+        x = self.root
+        y = None
 
-        if current is None:
-            return
+        while x is not None:
+            y = x
 
-        while current.left != None:
-            current = current.left
+            if data > x.data:
+                x = x.right
 
-        return current
+            else:
+                x = x.left
 
-    def max(self, x=None):
-        current = self.root if x is None else x
+        z.p = y
 
-        if current is None:
-            return
+        if y is None:
+            self.root = z
 
-        while current.right != None:
-            current = current.right
+        elif data > y.data:
+            y.right = z
 
-        return current
-
-    def successor(self, data):
-        x = self.search(data)
-
-        if x is None:
-            return
-
-        if x.right != None:
-            return self.min(x.right)
-
-        y = x.parent
-
-        while y != None and x.is_right():
-            x = y
-            y = y.father
-
-        return y
-
-    def predecessor(self, data):
-        x = self.search(data)
-
-        if x is None:
-            return
-
-        if x.left != None:
-            return self.max(x.left)
-
-        y = x.parent
-
-        while y != None and x.is_left():
-            x = y
-            y = y.father
-
-        return y
+        else:
+            y.left = z
 
     def transplant(self, u, v):
-
-        if u.father == None:
+        if u.p is None:
             self.root = v
-
-        elif u.is_left():
-            u.father.left = v
+        
+        elif u.is_right():
+            u.p.right = v
+        
         else:
-            u.father.right = v
+            u.p.left = v
 
-        if v != None:
-            v.father = u.father
+        if v is not None:
+            v.p = u.p
 
     def delete(self, data):
         z = self.search(data)
 
-        if z == None:
+        if z is None:
             return
 
-        if z.left == None:
+        if z.left is None:
             self.transplant(z, z.right)
 
-        elif z.right == None:
+        elif z.right is None:
             self.transplant(z, z.left)
 
         else:
             y = self.min(z.right)
+
             if y != z.right:
                 self.transplant(y, y.right)
                 y.right = z.right
-                y.right.father = y
+                y.right.p = y
 
             self.transplant(z, y)
+            z.left.p = y
             y.left = z.left
-            y.left.father = y
-
-    def in_order(self, root, array=[]):
-
-        if root != None:
-            self.in_order(root.left)
-            array.append(root.data)
-            self.in_order(root.right)
-
-        return array
-
-    def pre_order(self, node, array=[]):
-
-        if node != None:
-            array.append(node.data)
-            self.pre_order(node.left)
-            self.pre_order(node.right)
-
-        return array
-
-    def pos_order(self, node, array=[]):
-
-        if node != None:
-            self.pos_order(node.left)
-            self.pos_order(node.right)
-            array.append(node.data)
-        return array
 
 
 if __name__ == '__main__':
@@ -205,16 +197,6 @@ if __name__ == '__main__':
     for x in data_to_insert:
         tree.insert(x)
 
-    tree.delete(20)
-    tree.delete(9)
-    tree.delete(18)
-    tree.delete(6)
-    tree.delete(15)
-
-    in_order = tree.in_order(tree.root)
-    pre_order = tree.pre_order(tree.root)
-    pos_order = tree.pos_order(tree.root)
-
-    print(f'In-Order: {in_order}', end='\n')
-    print(f'Pre-Order: {pre_order}', end='\n')
-    print(f'Pos-Order: {pos_order}', end='\n')
+    tree.in_order_walk(tree.root)
+    tree.pre_order_walk(tree.root)
+    tree.pos_order_walk(tree.root)
